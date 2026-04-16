@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Jupyter / editor
+.ipynb_checkpoints/
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Project helper scripts not intended for GitHub
+prepare_nnunet_dataset.py
+download_missing_a_from_drive.py
+
+# Google Drive / OAuth secrets
+credentials.json
+credential.json
+client_secret_*.json
+token.json
+
+# Medical imaging data
+*.nii
+*.nii.gz
+
+# nnU-Net datasets and outputs
+image/
+segmentation_kidney_tumor/
+prepare-dataset/
+
+# Keep lightweight dataset metadata if needed
+!nnUnet_raw/
+nnUnet_raw/*
+!nnUnet_raw/Dataset001_mydata/
+nnUnet_raw/Dataset001_mydata/*
+!nnUnet_raw/Dataset001_mydata/dataset.json

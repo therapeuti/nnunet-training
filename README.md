@@ -1,6 +1,6 @@
 # nnU-Net v2 학습 가이드
 
-이 저장소는 `nnU-Net v2`로 신장(`kidney`) 및 종양(`tumor`) 분할 모델을 학습하기 위한 데이터셋과 실행 환경을 정리한 프로젝트입니다.
+`nnU-Net v2`로 신장(`kidney`) 및 종양(`tumor`) 분할 모델을 학습하기 위한 데이터셋과 실행 환경을 정리한 프로젝트
 
 현재 데이터셋:
 
@@ -8,15 +8,38 @@
 Dataset001_mydata
 ```
 
+공식 nnU-Net GitHub 저장소:
+- https://github.com/MIC-DKFZ/nnUNet
+
 
 ## 1. nnU-Net이 무엇인가
 
-공식 `MIC-DKFZ/nnUNet` 저장소에 따르면, `nnU-Net`은 데이터셋을 자동으로 분석해서 전처리, 네트워크 설정, 학습, 모델 선택, 추론 파이프라인을 자동으로 맞춰주는 의료영상 분할 프레임워크입니다.
+독일 암 연구센터(DKFZ)에서 개발한 `nnU-Net(no-new-Net)`은 의료영상 분할 분야에서 사실상 표준처럼 널리 쓰이는 딥러닝 프레임워크
+
+데이터셋을 자동으로 분석해서 전처리, 네트워크 설정, 학습, 모델 선택, 추론 파이프라인을 자동으로 맞춰주는 의료영상 분할 프레임워크
 
 핵심 개념:
 - 의료영상 semantic segmentation에 특화된 프레임워크
 - 데이터셋 특성에 맞게 preprocessing과 network configuration을 자동 설정
 - 사용자는 보통 모델 코드를 직접 작성하기보다, 데이터셋 형식을 맞춘 뒤 명령어로 실행
+
+이 프레임워크의 핵심 철학은 "완전히 새로운 네트워크를 설계하는 것보다, 이미 검증된 U-Net 계열 구조를 데이터셋에 맞게 얼마나 잘 설정하느냐가 더 중요하다"는 점에 있습니다.
+
+의료영상 데이터는 CT, MRI, 초음파처럼 modality가 다르고, 해상도와 spacing, 장기 크기, intensity 분포도 크게 다릅니다. 기존에는 새로운 데이터셋이 들어올 때마다 연구자가 전처리 방식, patch size, batch size, network depth, 학습 설정 등을 손으로 많이 조정해야 했습니다. `nnU-Net`은 이 과정을 최대한 자동화합니다.
+
+공식 논문과 문서에서 설명하는 `nnU-Net`의 중요한 특징은 설정을 크게 세 가지로 나누어 다룬다는 점입니다.
+
+`Fixed Parameters`
+- 데이터셋과 무관하게 비교적 안정적으로 좋은 성능을 보이는 고정 설정
+- 예: activation, loss, optimizer 등
+
+`Rule-based Parameters`
+- 데이터셋의 spacing, shape, voxel 수, class 특성 등을 분석해서 규칙적으로 계산되는 설정
+- 예: network depth, patch size, kernel size, resampling 전략, normalization 방식 등
+
+`Empirical Parameters`
+- 실제 학습과 검증 결과를 바탕으로 결정되는 설정
+- 예: 어떤 configuration을 최종 채택할지, ensemble을 할지, post-processing을 적용할지 등
 
 대표적인 구성:
 - `2d`
@@ -24,6 +47,19 @@ Dataset001_mydata
 - `3d_lowres -> 3d_cascade_fullres`
 
 다만 모든 데이터셋에서 모든 구성이 생성되는 것은 아니며, 데이터 특성에 따라 필요한 구성만 자동으로 만들어집니다.
+
+전체적인 동작 흐름은 보통 다음과 같습니다.
+
+1. `Data Fingerprinting`
+   - 입력 데이터셋의 spacing, shape, intensity 분포 등을 분석해 데이터 특성을 요약
+2. `Pipeline Generation`
+   - 분석 결과를 바탕으로 적절한 U-Net configuration과 preprocessing pipeline을 자동 결정
+3. `Training`
+   - 기본적으로 cross-validation 기반으로 학습을 진행
+   - 강한 data augmentation을 사용
+4. `Model Selection / Ensembling / Post-processing`
+   - 여러 configuration 중 성능이 좋은 조합을 선택
+   - 필요하면 ensemble과 connected component 기반 후처리를 적용
 
 
 ## 2. 개발환경 세팅
@@ -69,17 +105,6 @@ CUDA 12.1
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 ```
 
-CUDA 11.8
-
-```cmd
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-```
-
-CPU 전용
-
-```cmd
-pip install torch torchvision torchaudio
-```
 
 참고:
 - nnU-Net 공식 README에는 `torch 2.9.0`에서 3D convolution과 AMP 관련 성능 저하가 있다고 적혀 있습니다.
@@ -111,6 +136,36 @@ True
 ```cmd
 pip install nnunetv2
 ```
+
+설치 방식은 크게 2가지로 생각하면 됩니다.
+
+`방법 1: 즉시 사용 가능한 패키지로 설치`
+- `pip install nnunetv2`
+- 가장 간단한 설치 방법입니다.
+- `nnU-Net v2`를 바로 실행해서 preprocessing, training, inference를 돌리고 싶을 때 적합합니다.
+- 코드 내부를 직접 수정하지 않고 사용하는 일반적인 경우에 추천합니다.
+
+`방법 2: 프레임워크로 사용하기 위한 설치`
+
+```cmd
+git clone https://github.com/MIC-DKFZ/nnUNet.git
+cd nnUNet
+pip install -e .
+```
+
+- GitHub에서 소스코드를 직접 내려받아 설치하는 방식입니다.
+- `pip install -e .` 는 editable install이므로, 소스코드를 수정하면 설치된 패키지에도 바로 반영됩니다.
+- `nnU-Net` 내부 코드를 분석하거나 수정하면서 실험할 때 적합합니다.
+- 단순 사용 목적이라면 보통은 `pip install nnunetv2` 만으로 충분합니다.
+
+`선택사항: hiddenlayer 설치`
+
+```cmd
+pip install --upgrade git+https://github.com/FabianIsensee/hiddenlayer.git
+```
+
+- 필수 패키지는 아닙니다.
+- 네트워크 토폴로지(plot) 시각화가 필요할 때만 추가로 설치하면 됩니다.
 
 설치 확인:
 
@@ -273,21 +328,7 @@ nnUnet_raw/Dataset001_mydata/dataset.json
 - inference 때도 training 때와 같은 채널 순서를 유지해야 합니다.
 
 
-## 5. 현재 프로젝트의 데이터셋 상태
-
-현재 프로젝트는 `A phase` CT만 학습에 사용하도록 구성되어 있습니다.
-
-현재 준비 상태:
-- `segmentation_A`가 있는 케이스: `318개`
-- `image_A`가 있는 케이스: `318개`
-- `imagesTr`: `318개`
-- `labelsTr`: `318개`
-- `dataset.json`의 `numTraining`: `318`
-
-즉 현재 상태에서는 `Dataset001_mydata`가 바로 `nnU-Net v2` 학습에 들어갈 수 있는 상태입니다.
-
-
-## 6. 환경변수 설정
+## 5. 환경변수 설정
 
 공식 문서에 따르면 `nnU-Net`은 아래 3개 환경변수를 사용합니다.
 
@@ -335,7 +376,7 @@ setx nnUNet_results "C:\Users\user\nnunet\nnUnet_results"
 - `setx` 실행 후에는 새 `cmd` 창을 다시 열어야 반영됩니다.
 
 
-## 7. 학습 실행 순서
+## 6. 학습 실행 순서
 
 공식 nnU-Net 흐름은 보통 다음 순서입니다.
 
@@ -384,7 +425,7 @@ nnUNetv2_train 1 3d_fullres 4
 ```
 
 
-## 8. 현재 프로젝트에서 바로 실행할 명령
+## 7. 현재 프로젝트에서 바로 실행할 명령
 
 `cmd` 기준으로 가장 바로 사용할 수 있는 순서는 아래와 같습니다.
 
@@ -400,7 +441,7 @@ nnUNetv2_train 1 3d_fullres 0
 fold 0 학습이 잘 되면 이후 fold 1~4를 이어서 실행하면 됩니다.
 
 
-## 9. 참고 자료
+## 8. 참고 자료
 
 공식 nnU-Net 저장소 및 문서:
 - https://github.com/MIC-DKFZ/nnUNet

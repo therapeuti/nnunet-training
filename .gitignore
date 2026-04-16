@@ -43,6 +43,10 @@ token.json
 # nnU-Net datasets and outputs
 image/
 segmentation_kidney_tumor/
+nnUnet_preprocessed/*
+!nnUnet_preprocessed/.gitkeep
+nnUnet_results/*
+!nnUnet_results/.gitkeep
 prepare-dataset/
 
 # Keep lightweight dataset metadata if needed
@@ -50,4 +54,14 @@ prepare-dataset/
 nnUnet_raw/*
 !nnUnet_raw/Dataset001_mydata/
 nnUnet_raw/Dataset001_mydata/*
+!nnUnet_raw/Dataset001_mydata/.gitkeep
 !nnUnet_raw/Dataset001_mydata/dataset.json
+!nnUnet_raw/Dataset001_mydata/imagesTr/
+nnUnet_raw/Dataset001_mydata/imagesTr/*
+!nnUnet_raw/Dataset001_mydata/imagesTr/.gitkeep
+!nnUnet_raw/Dataset001_mydata/imagesTs/
+nnUnet_raw/Dataset001_mydata/imagesTs/*
+!nnUnet_raw/Dataset001_mydata/imagesTs/.gitkeep
+!nnUnet_raw/Dataset001_mydata/labelsTr/
+nnUnet_raw/Dataset001_mydata/labelsTr/*
+!nnUnet_raw/Dataset001_mydata/labelsTr/.gitkeep

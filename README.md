@@ -466,23 +466,8 @@ nnUNetv2_train 1 3d_fullres 4
 ```
 
 
-## 8. 현재 프로젝트에서 바로 실행할 명령
 
-`cmd` 기준으로 가장 바로 사용할 수 있는 순서는 아래와 같습니다.
-
-```cmd
-set nnUNet_raw=C:\Users\user\nnunet\nnUnet_raw
-set nnUNet_preprocessed=C:\Users\user\nnunet\nnUnet_preprocessed
-set nnUNet_results=C:\Users\user\nnunet\nnUnet_results
-
-nnUNetv2_plan_and_preprocess -d 1 --verify_dataset_integrity
-nnUNetv2_train 1 3d_fullres 0
-```
-
-fold 0 학습이 잘 되면 이후 fold 1~4를 이어서 실행하면 됩니다.
-
-
-## 9. 참고 자료
+## 8. 참고 자료
 
 공식 nnU-Net 저장소 및 문서:
 - https://github.com/MIC-DKFZ/nnUNet

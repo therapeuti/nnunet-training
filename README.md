@@ -2,7 +2,7 @@
 
 `nnU-Net v2`로 신장(`kidney`) 및 종양(`tumor`) 분할 모델을 학습하기 위한 데이터셋과 실행 환경을 정리한 프로젝트
 
-현재 데이터셋:
+현재 학습을 위한 데이터셋:
 
 ```text
 Dataset001_mydata
@@ -13,6 +13,11 @@ Dataset001_mydata
 
 
 ## 1. nnU-Net이 무엇인가
+
+`nnU-Net v2`는 의료영상 분할을 위해 데이터셋을 자동으로 분석하고, 전처리와 학습 설정을 맞춰주는 프레임워크입니다.
+
+<details>
+<summary>자세한 설명 보기</summary>
 
 독일 암 연구센터(DKFZ)에서 개발한 `nnU-Net(no-new-Net)`은 의료영상 분할 분야에서 사실상 표준처럼 널리 쓰이는 딥러닝 프레임워크
 
@@ -61,6 +66,8 @@ Dataset001_mydata
    - 여러 configuration 중 성능이 좋은 조합을 선택
    - 필요하면 ensemble과 connected component 기반 후처리를 적용
 
+
+</details>
 
 ## 2. 개발환경 세팅
 
@@ -165,7 +172,11 @@ pip install --upgrade git+https://github.com/FabianIsensee/hiddenlayer.git
 ```
 
 - 필수 패키지는 아닙니다.
-- 네트워크 토폴로지(plot) 시각화가 필요할 때만 추가로 설치하면 됩니다.
+- 학습할 때 사용되는 U-Net 구조를 그림으로 확인하고 싶을 때만 추가로 설치하면 됩니다.
+- 학습 시작 시, 네트워크 토폴로지(모델 안에 어떤 층이 어떤 순서로 연결되어 있는지 보여주는 구조도)가 pdf파일로 저장됩니다.
+- 예를 들어 encoder와 decoder가 몇 단계로 구성되는지, 각 단계에서 feature channel 수가 어떻게 바뀌는지, downsampling과 upsampling이 어떻게 연결되는지 같은 정보를 PDF 형태로 확인하는 용도입니다.
+- 즉 의료영상 자체를 시각화하는 기능이 아니라, `nnU-Net`이 현재 데이터셋에 맞춰 자동으로 만든 신경망 구조를 그림으로 보는 기능입니다.
+- 모델 디버깅, 구조 확인, 문서화가 필요하지 않다면 없어도 됩니다.
 
 설치 확인:
 
@@ -175,7 +186,29 @@ nnUNetv2_train --help
 ```
 
 
-## 3. nnU-Net 데이터셋 구조
+## 3. 프로젝트 폴더 구조
+
+`nnU-Net v2`를 사용하려면 프로젝트 루트 기준으로 아래 3개 폴더를 먼저 준비해두는 것이 좋습니다.
+
+- `nnUnet_raw`: 원본 데이터셋을 두는 폴더
+- `nnUnet_preprocessed`: 전처리 결과가 저장되는 폴더
+- `nnUnet_results`: 학습 결과, 체크포인트, 추론 결과 등이 저장되는 폴더
+
+현재 프로젝트 기준 예시는 아래와 같습니다.
+
+```text
+nnunet/
+├─ nnUnet_raw/
+├─ nnUnet_preprocessed/
+├─ nnUnet_results/
+├─ README.md
+└─ .gitignore
+```
+
+이 중 실제로 사용자가 직접 구성해야 하는 핵심은 `nnUnet_raw` 아래의 데이터셋 폴더입니다. `nnUnet_preprocessed` 와 `nnUnet_results` 는 비어 있어도 되며, 전처리와 학습을 시작하면 `nnU-Net`이 내부 파일들을 생성합니다.
+
+
+## 4. nnU-Net 데이터셋 구조
 
 공식 문서에 따르면 데이터셋은 `nnUNet_raw` 아래에 dataset ID와 dataset name을 포함한 폴더로 저장합니다.
 
@@ -195,7 +228,7 @@ nnUnet_raw/Dataset001_mydata/
 ```
 
 
-### 3-1. 필수 폴더 구조
+### 4-1. 필수 폴더 구조
 
 `Dataset001_mydata` 내부는 아래처럼 구성되어 있어야 합니다.
 
@@ -217,7 +250,7 @@ nnUnet_raw/
 공식 문서에 따르면 `imagesTs`는 nnU-Net 학습에 직접 사용되지 않으며, 사용자가 테스트 이미지를 보관하는 용도로 둘 수 있습니다.
 
 
-### 3-2. 파일명 규칙
+### 4-2. 파일명 규칙
 
 공식 문서에 따르면 입력 채널은 파일명 끝의 4자리 채널 번호로 구분합니다.
 
@@ -253,7 +286,7 @@ labelsTr/case_00001.nii.gz
 ```
 
 
-### 3-3. 현재 프로젝트의 라벨 정의
+### 4-3. 현재 프로젝트의 라벨 정의
 
 현재 라벨 정의는 다음과 같습니다.
 
@@ -267,7 +300,7 @@ labelsTr/case_00001.nii.gz
 - class 값은 연속적이어야 함 (`0,1,2,3,...`)
 
 
-## 4. dataset.json 구성 방법
+## 5. dataset.json 구성 방법
 
 현재 파일 경로:
 
@@ -295,7 +328,7 @@ nnUnet_raw/Dataset001_mydata/dataset.json
 ```
 
 
-### 4-1. 항목 설명
+### 5-1. 항목 설명
 
 `channel_names`
 - 채널 번호와 의미를 연결
@@ -320,7 +353,7 @@ nnUnet_raw/Dataset001_mydata/dataset.json
 - 공식 문서에서 여러 reader/writer를 지원하며, 현재 프로젝트는 `NibabelIOWithReorient`를 사용
 
 
-### 4-2. 작성 시 주의점
+### 5-2. 작성 시 주의점
 
 - `numTraining`은 실제 파일 개수와 일치해야 합니다.
 - 이미지와 라벨의 geometry는 같은 케이스 내에서 서로 일치해야 합니다.
@@ -328,7 +361,7 @@ nnUnet_raw/Dataset001_mydata/dataset.json
 - inference 때도 training 때와 같은 채널 순서를 유지해야 합니다.
 
 
-## 5. 환경변수 설정
+## 6. 환경변수 설정
 
 공식 문서에 따르면 `nnU-Net`은 아래 3개 환경변수를 사용합니다.
 
@@ -376,7 +409,7 @@ setx nnUNet_results "C:\Users\user\nnunet\nnUnet_results"
 - `setx` 실행 후에는 새 `cmd` 창을 다시 열어야 반영됩니다.
 
 
-## 6. 학습 실행 순서
+## 7. 학습 실행 순서
 
 공식 nnU-Net 흐름은 보통 다음 순서입니다.
 
@@ -396,6 +429,14 @@ nnUNetv2_plan_and_preprocess -d 1 --verify_dataset_integrity
 설명:
 - `-d 1`: dataset ID 1, 즉 `Dataset001_mydata`
 - `--verify_dataset_integrity`: 파일 구조, geometry, 개수 등을 확인
+
+`nnUNetv2_plan_and_preprocess`를 실행하면 데이터 특성에 따라 여러 configuration이 함께 생성될 수 있습니다. 현재 자주 보게 되는 항목은 아래와 같습니다.
+
+- `2d`: 3D 볼륨을 슬라이스 단위의 2D 이미지로 나누어 학습하는 설정
+- `3d_lowres`: 3D 볼륨을 더 낮은 해상도로 처리해 전체 구조를 넓게 보는 설정
+- `3d_fullres`: 3D 볼륨을 원래에 가까운 해상도로 처리하는 설정
+
+일반적으로 `2d`는 메모리 부담이 적고, `3d_fullres`는 3차원 문맥을 더 잘 활용할 수 있으며, `3d_lowres`는 큰 구조를 거칠게 먼저 보는 데 유리합니다. 데이터셋 특성에 따라 이 중 일부만 생성될 수도 있고, 여러 개가 함께 생성될 수도 있습니다.
 
 
 ### 7-2. 학습 시작
@@ -425,7 +466,7 @@ nnUNetv2_train 1 3d_fullres 4
 ```
 
 
-## 7. 현재 프로젝트에서 바로 실행할 명령
+## 8. 현재 프로젝트에서 바로 실행할 명령
 
 `cmd` 기준으로 가장 바로 사용할 수 있는 순서는 아래와 같습니다.
 
@@ -441,7 +482,7 @@ nnUNetv2_train 1 3d_fullres 0
 fold 0 학습이 잘 되면 이후 fold 1~4를 이어서 실행하면 됩니다.
 
 
-## 8. 참고 자료
+## 9. 참고 자료
 
 공식 nnU-Net 저장소 및 문서:
 - https://github.com/MIC-DKFZ/nnUNet
